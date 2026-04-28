@@ -1344,12 +1344,21 @@ def pyInterpretCommand : Command where
         IO.Process.exit ExitCode.userError
     match core.run with
     | .ok E =>
-      let outputNames := match Core.Program.Procedure.find? core ⟨"__main__", ()⟩ with
+      let proc := Core.Program.Procedure.find? core ⟨"__main__", ()⟩
+      let outputNames := match proc with
         | some p => p.header.outputs.keys.map (·.name)
         | none => []
+      let inputNames := match proc with
+        | some p => p.header.inputs.keys.map (·.name)
+        | none => []
+      let userParams := inputNames.filter (fun n => !n.startsWith "$")
+      if !userParams.isEmpty then
+        exitFailure s!"'__main__' should not accept parameters, but has: {userParams}"
       let (lhs, exprEnv) := Core.Env.genVars outputNames E.exprEnv
+      let (argIds, exprEnv) := Core.Env.genVars inputNames exprEnv
+      let args := argIds.map (fun id => Core.Expression.Expr.fvar () id none)
       let E := { E with exprEnv }
-      let E := Core.Statement.Command.runCall lhs "__main__" [] fuel E
+      let E := Core.Statement.Command.runCall lhs "__main__" args fuel E
       match E.error with
       | none =>
         IO.println "Execution completed successfully."
