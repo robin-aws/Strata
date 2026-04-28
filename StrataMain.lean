@@ -1356,7 +1356,7 @@ def pyInterpretCommand : Command where
         exitFailure s!"'__main__' should not accept parameters, but has: {userParams}"
       let (lhs, exprEnv) := Core.Env.genVars outputNames E.exprEnv
       let (argIds, exprEnv) := Core.Env.genVars inputNames exprEnv
-      let args := argIds.map (fun id => Core.Expression.Expr.fvar () id none)
+      let args : List Core.Expression.Expr := argIds.map (fun id => .fvar () id none)
       let E := { E with exprEnv }
       let E := Core.Statement.Command.runCall lhs "__main__" args fuel E
       match E.error with
